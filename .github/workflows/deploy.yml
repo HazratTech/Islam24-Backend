@@ -54,7 +54,7 @@ jobs:
             --name islam24-backend \
             --network custom_bridge \
             --ip 172.25.0.13 \
-            --env-file /home/env/islam24-backend.env \
+            --env-file /home/envs/islam24-backend.env \
             -p 9393:9393 \
             --restart unless-stopped \
             ${{ secrets.DOCKERHUB_USERNAME }}/islam24-backend:latest
