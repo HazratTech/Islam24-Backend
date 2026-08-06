@@ -22,21 +22,23 @@ class JwtAuthenticationFilter(
     ) {
         val header = request.getHeader("Authorization")
 
-        if (header == null || !header.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response)
-            return
+        if (header != null && header.startsWith("Bearer ")) {
+            val token = header.removePrefix("Bearer ")
+            try {
+                val userId = jwtService.extractToken(token = token)
+                val userPrincipal = customUserDetailsService.loadUserById(id = userId)
+
+                val authentication = UsernamePasswordAuthenticationToken(
+                    userPrincipal,
+                    null,
+                    userPrincipal.authorities
+                )
+                SecurityContextHolder.getContext().authentication = authentication
+            } catch (e: Exception) {
+                logger.warn("JWT Authentication failed: ${e.message}")
+            }
         }
 
-        val token = header.removePrefix("Bearer ")
-        val userId = jwtService.extractToken(token = token)
-        val userPrincipal = customUserDetailsService.loadUserById(id = userId)
-
-        val authentication = UsernamePasswordAuthenticationToken(
-            userPrincipal,
-            null,
-            userPrincipal.authorities
-        )
-        SecurityContextHolder.getContext().authentication = authentication
         filterChain.doFilter(request, response)
     }
 }

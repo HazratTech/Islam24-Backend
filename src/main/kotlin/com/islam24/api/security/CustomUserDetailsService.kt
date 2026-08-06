@@ -20,7 +20,7 @@ class CustomUserDetailsService(
 
     fun loadUserById(id: UUID): UserPrincipal {
         val user = userRepository.findById(id).orElseThrow {
-            UserNotFoundException()
+            UserNotFoundException(id)
         }
 
         return UserPrincipal(user = user)
