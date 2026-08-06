@@ -8,9 +8,12 @@ import java.util.UUID
 
 
 @Service
-class ProfileService(private val userRepository: UserRepository) {
+class ProfileService(private val userRepository: UserRepository
+) {
 
-
+    fun deleteProfile(userId: UUID) {
+        userRepository.deleteById(userId)
+    }
 
     private fun findUserById(id: UUID): User? {
         return userRepository.findById(id).orElseThrow {
