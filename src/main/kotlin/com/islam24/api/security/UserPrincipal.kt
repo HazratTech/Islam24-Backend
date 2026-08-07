@@ -28,5 +28,5 @@ class UserPrincipal(
         get() = user.googleId
 
     val createdAt: Instant
-        get() = user.createdAt
+        get() = user.createdAt ?: Instant.now()
 }

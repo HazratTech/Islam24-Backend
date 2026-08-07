@@ -22,6 +22,8 @@ class User(
     @Column
     var avatarUrl: String? = null,
 
-    var createdAt: Instant = Instant.now(),
-    var updatedAt: Instant = Instant.now(),
+    @Column(name = "created_at")
+    var createdAt: Instant? = Instant.now(),
+    @Column(name = "updated_at")
+    var updatedAt: Instant? = Instant.now(),
 )

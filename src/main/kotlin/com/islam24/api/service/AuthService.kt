@@ -72,8 +72,7 @@ class AuthService(
     @Transactional
     fun logout(request: LogoutRequest) {
         val incomingHash = hashToken(token = request.refreshToken)
-        val refreshToken =
-            refreshTokenRepository.findByTokenHash(token = incomingHash) ?: throw InvalidRefreshTokenException()
+        val refreshToken = refreshTokenRepository.findByTokenHash(token = incomingHash) ?: throw InvalidRefreshTokenException()
         refreshToken.revoked = true
         refreshToken.updatedAt = Instant.now()
     }

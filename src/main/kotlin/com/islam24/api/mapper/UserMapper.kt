@@ -3,6 +3,7 @@ package com.islam24.api.mapper
 import com.islam24.api.dto.ProfileResponse
 import com.islam24.api.dto.auth.GoogleUser
 import com.islam24.api.entity.User
+import java.time.Instant
 
 
 fun GoogleUser.toEntity(): User {
@@ -22,6 +23,6 @@ fun User.toResponse(): ProfileResponse {
         name = displayName,
         email = email,
         picture = avatarUrl,
-        createdAt = createdAt
+        createdAt = createdAt ?: Instant.now()
     )
 }
