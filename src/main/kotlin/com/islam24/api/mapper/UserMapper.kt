@@ -10,7 +10,7 @@ fun GoogleUser.toEntity(): User {
         googleId =  googleId,
         displayName = name,
         email = email,
-        avatarUrl = pictureUrl
+        avatarUrl = pictureUrl,
     )
 }
 
@@ -21,6 +21,7 @@ fun User.toResponse(): ProfileResponse {
         googleId = googleId,
         name = displayName,
         email = email,
-        picture = avatarUrl
+        picture = avatarUrl,
+        createdAt = createdAt
     )
 }

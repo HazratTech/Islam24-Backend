@@ -9,5 +9,7 @@ import java.util.UUID
 @Repository
 interface RefreshTokenRepository: JpaRepository<RefreshToken, UUID> {
 
-    fun findByToken(token: String): RefreshToken?
+    fun findByTokenHash(token: String): RefreshToken?
+
+    fun deleteAllByUserId(userId: UUID)
 }

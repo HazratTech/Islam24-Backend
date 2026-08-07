@@ -9,9 +9,12 @@ import com.islam24.api.error.exception.InvalidRefreshTokenException
 import com.islam24.api.mapper.toEntity
 import com.islam24.api.repository.RefreshTokenRepository
 import com.islam24.api.repository.UserRepository
+import com.islam24.api.security.hashToken
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDateTime
+import java.util.Date
 
 
 @Service
@@ -32,34 +35,47 @@ class AuthService(
             userRepository.findByGoogleId(googleId = googleUser.googleId) ?: userRepository.save(googleUser.toEntity())
 
         val accessToken = jwtService.generateAccessToken(userId = user.id)
-        val refreshToken = refreshTokenService.create(user= user)
+        val refreshToken = refreshTokenService.create(user = user)
 
         return AuthResponse(
             accessToken = accessToken,
-            refreshToken = refreshToken.token,
+            refreshToken = refreshToken,
         )
     }
 
     @Transactional
     fun refresh(request: RefreshRequest): RefreshResponse {
-        val refreshToken = refreshTokenRepository.findByToken(token = request.refreshToken) ?: throw InvalidRefreshTokenException()
 
-        if (refreshToken.revoked){
+        val incomingHash = hashToken(token = request.refreshToken)
+        val refreshToken =
+            refreshTokenRepository.findByTokenHash(token = incomingHash) ?: throw InvalidRefreshTokenException()
+
+        if (refreshToken.revoked) {
             throw InvalidRefreshTokenException()
         }
         if (refreshToken.expiresAt.isBefore(Instant.now())) {
             refreshToken.revoked = true
+            refreshToken.updatedAt = Instant.now()
             throw InvalidRefreshTokenException()
         }
 
+        // Revoked current token (Token Rotation)
+        refreshToken.revoked = true
+        refreshToken.updatedAt = Instant.now()
+        refreshTokenRepository.save(refreshToken)
+
+        val newRawRefreshToken = refreshTokenService.create(user = refreshToken.user)
         val accessToken = jwtService.generateAccessToken(userId = refreshToken.user.id)
-        return RefreshResponse(accessToken = accessToken)
+        return RefreshResponse(accessToken = accessToken, refreshToken = newRawRefreshToken)
     }
 
     @Transactional
     fun logout(request: LogoutRequest) {
-        val refreshToken = refreshTokenRepository.findByToken(token = request.refreshToken) ?: throw InvalidRefreshTokenException()
+        val incomingHash = hashToken(token = request.refreshToken)
+        val refreshToken =
+            refreshTokenRepository.findByTokenHash(token = incomingHash) ?: throw InvalidRefreshTokenException()
         refreshToken.revoked = true
+        refreshToken.updatedAt = Instant.now()
     }
 
 }

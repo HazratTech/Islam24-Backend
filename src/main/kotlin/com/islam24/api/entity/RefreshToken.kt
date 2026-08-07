@@ -18,7 +18,7 @@ class RefreshToken(
     var id: UUID = UUID.randomUUID(),
 
     @Column(nullable = false,unique = true)
-    var token: String,
+    var tokenHash: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -31,8 +31,8 @@ class RefreshToken(
     var revoked: Boolean = false,
 
     @Column(nullable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: Instant = Instant.now(),
 
     @Column(nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: Instant = Instant.now()
 )

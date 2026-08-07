@@ -3,6 +3,7 @@ package com.islam24.api.security
 import com.islam24.api.entity.User
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
+import java.time.Instant
 import java.util.UUID
 
 class UserPrincipal(
@@ -25,4 +26,7 @@ class UserPrincipal(
 
     val googleId: String
         get() = user.googleId
+
+    val createdAt: Instant
+        get() = user.createdAt
 }

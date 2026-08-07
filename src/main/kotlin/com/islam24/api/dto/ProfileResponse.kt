@@ -1,5 +1,6 @@
 package com.islam24.api.dto
 
+import java.time.Instant
 import java.util.UUID
 
 data class ProfileResponse(
@@ -8,4 +9,5 @@ data class ProfileResponse(
     val name: String,
     val email: String,
     val picture: String?,
+    val createdAt: Instant,
 )

@@ -25,7 +25,8 @@ class ProfileController(private val profileService: ProfileService) {
             googleId = principal.googleId,
             name = principal.name,
             email = principal.email,
-            picture = principal.pictureUrl
+            picture = principal.pictureUrl,
+            createdAt = principal.createdAt,
         )
     }
 
