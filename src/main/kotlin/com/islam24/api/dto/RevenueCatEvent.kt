@@ -11,6 +11,7 @@ data class RevenueCatEvent(
     val id: String,
     val type: String,
     @JsonProperty("app_user_id") val appUserId: String,
+    val aliases: List<String>?,
     @JsonProperty("original_app_user_id") val originalAppUserId: String?,
     @JsonProperty("product_id") val productId: String?,
     @JsonProperty("entitlement_id") val entitlementId: String?,

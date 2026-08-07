@@ -1,6 +1,7 @@
 package com.islam24.api.service
 
 import com.islam24.api.dto.RevenueCatEvent
+import com.islam24.api.entity.User
 import com.islam24.api.entity.UserSubscription
 import com.islam24.api.entity.UserTip
 import com.islam24.api.entity.WebhookEventLog
@@ -18,44 +19,65 @@ class SubscriptionService(
     private val userRepository: UserRepository,
     private val webhookEventLogRepository: WebhookEventLogRepository,
     private val userSubscriptionRepository: UserSubscriptionRepository,
-    private val userTipRepository: UserTipRepository
+    private val userTipRepository: UserTipRepository,
 ) {
 
     @Transactional
     fun handleRevenueCatEvent(event: RevenueCatEvent) {
-        // 1. Idempotency Check
+        // 1. Idempotency Check & Logging
         if (webhookEventLogRepository.existsById(event.id)) {
             return
         }
+        webhookEventLogRepository.save(WebhookEventLog(eventId = event.id))
 
-        val userId = try {
-            UUID.fromString(event.appUserId)
-        } catch (e: IllegalArgumentException) {
-            return
-        }
+        // 2. Resolve User by UUID, email, or aliases
+        val user = resolveUser(event) ?: return
 
+        // 3. Process Webhook Event Type
         when (event.type) {
-            "INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION" -> {
-                activeSubscription(userId = userId, event = event)
+            "INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "TEST" -> {
+                activeSubscription(user = user, event = event)
             }
             "NON_RENEWING_PURCHASE" -> {
-                recordOneTimeTip(userId = userId, event = event)
+                recordOneTimeTip(user = user, event = event)
             }
             "EXPIRATION" -> {
-                expireSubscription(userId = userId)
+                expireSubscription(userId = user.id)
             }
             "CANCELLATION" -> {
-                markAutoRenewDisabled(userId = userId)
+                markAutoRenewDisabled(userId = user.id)
             }
         }
-
-        // Log event ID to prevent duplicate processing
-        webhookEventLogRepository.save(WebhookEventLog(eventId = event.id))
     }
 
-    private fun activeSubscription(userId: UUID, event: RevenueCatEvent) {
-        val user = userRepository.findById(userId).orElse(null) ?: return
+    private fun resolveUser(event: RevenueCatEvent): User? {
+        // Try finding by UUID if appUserId is a UUID string
+        try {
+            val uuid = UUID.fromString(event.appUserId)
+            val user = userRepository.findById(uuid).orElse(null)
+            if (user != null) return user
+        } catch (_: IllegalArgumentException) {}
 
+        // Try finding by email if appUserId contains @
+        if (event.appUserId.contains("@")) {
+            val user = userRepository.findByEmail(event.appUserId)
+            if (user != null) return user
+        }
+
+        // Try finding by email/googleId from aliases list
+        event.aliases?.forEach { alias ->
+            if (alias.contains("@")) {
+                val user = userRepository.findByEmail(alias)
+                if (user != null) return user
+            }
+            val user = userRepository.findByGoogleId(alias)
+            if (user != null) return user
+        }
+
+        return null
+    }
+
+    private fun activeSubscription(user: User, event: RevenueCatEvent) {
         val expiresAt = event.expirationAtMs?.let { Instant.ofEpochMilli(it) }
         val purchasedAt = event.purchasedAtMs?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
         val entitlementId = event.entitlementIds?.firstOrNull() ?: event.entitlementId ?: "premium"
@@ -63,7 +85,7 @@ class SubscriptionService(
         val store = event.store ?: "UNKNOWN"
         val environment = event.environment ?: "PRODUCTION"
 
-        val sub = userSubscriptionRepository.findByUserId(userId)
+        val sub = userSubscriptionRepository.findByUserId(user.id)
             ?: UserSubscription(
                 id = UUID.randomUUID(),
                 user = user,
@@ -89,9 +111,7 @@ class SubscriptionService(
         userSubscriptionRepository.save(sub)
     }
 
-    private fun recordOneTimeTip(userId: UUID, event: RevenueCatEvent) {
-        val user = userRepository.findById(userId).orElse(null) ?: return
-
+    private fun recordOneTimeTip(user: User, event: RevenueCatEvent) {
         val purchasedAt = event.purchasedAtMs?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
         val tip = UserTip(
             id = UUID.randomUUID(),
