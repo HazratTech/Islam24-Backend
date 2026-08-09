@@ -18,6 +18,8 @@ import java.time.Instant
 import java.util.UUID
 import org.springframework.messaging.simp.SimpMessagingTemplate
 
+import org.slf4j.LoggerFactory
+
 @Service
 class SubscriptionService(
     private val userRepository: UserRepository,
@@ -28,6 +30,8 @@ class SubscriptionService(
     private val messagingTemplate: SimpMessagingTemplate
 ) {
 
+    private val logger = LoggerFactory.getLogger(SubscriptionService::class.java)
+
     @Transactional
     fun handleRevenueCatEvent(event: RevenueCatEvent) {
         // 1. Idempotency Check & Logging
@@ -37,7 +41,12 @@ class SubscriptionService(
         webhookEventLogRepository.save(WebhookEventLog(eventId = event.id))
 
         // 2. Resolve User by UUID, email, or aliases
-        val user = resolveUser(event) ?: return
+        val user = resolveUser(event)
+        if (user == null) {
+            logger.warn("SubscriptionService: Webhook event {} ignored because user could not be resolved (appUserId: {}, aliases: {})",
+                event.id, event.appUserId, event.aliases)
+            return
+        }
 
         // 3. Process Webhook Event Type
         when (event.type) {
@@ -60,24 +69,27 @@ class SubscriptionService(
     }
 
     private fun resolveUser(event: RevenueCatEvent): User? {
+        val trimmedAppUserId = event.appUserId.trim()
+
         // Try finding by UUID if appUserId is a UUID string
         try {
-            val uuid = UUID.fromString(event.appUserId)
+            val uuid = UUID.fromString(trimmedAppUserId)
             val user = userRepository.findById(uuid).orElse(null)
             if (user != null) return user
         } catch (_: IllegalArgumentException) {
         }
 
-        // Try finding by email if appUserId contains @
-        if (event.appUserId.contains("@")) {
-            val user = userRepository.findByEmail(event.appUserId)
+        // Try finding by email if appUserId contains @ (case-insensitive)
+        if (trimmedAppUserId.contains("@")) {
+            val user = userRepository.findByEmailIgnoreCase(trimmedAppUserId)
             if (user != null) return user
         }
 
-        // Try finding by email/googleId from aliases list
-        event.aliases?.forEach { alias ->
+        // Try finding by email/googleId from aliases list (case-insensitive & trimmed)
+        event.aliases?.forEach { rawAlias ->
+            val alias = rawAlias.trim()
             if (alias.contains("@")) {
-                val user = userRepository.findByEmail(alias)
+                val user = userRepository.findByEmailIgnoreCase(alias)
                 if (user != null) return user
             }
             val user = userRepository.findByGoogleId(alias)
