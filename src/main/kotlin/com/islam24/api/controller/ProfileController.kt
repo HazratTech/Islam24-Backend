@@ -1,8 +1,10 @@
 package com.islam24.api.controller
 
-import com.islam24.api.dto.ProfileResponse
+import com.islam24.api.dto.profile.ProfileResponse
+import com.islam24.api.dto.profile.UserSupportStatusResponse
 import com.islam24.api.security.UserPrincipal
 import com.islam24.api.service.ProfileService
+import com.islam24.api.service.SupportService
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -13,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/profile")
-class ProfileController(private val profileService: ProfileService) {
+class ProfileController(private val profileService: ProfileService, private val supportService: SupportService) {
 
 
     @GetMapping("/me")
@@ -36,6 +38,13 @@ class ProfileController(private val profileService: ProfileService) {
         @AuthenticationPrincipal principal: UserPrincipal
     ){
         profileService.deleteProfile(userId = principal.id)
+    }
+
+    @GetMapping("/support-status")
+    fun getUserSupportStatus(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): UserSupportStatusResponse {
+        return supportService.getUserSupportStatus(userId = principal.id)
     }
 
 }

@@ -15,13 +15,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class SecurityConfig {
 
     private val publicEndpoints = arrayOf(
-        "/**",
         "/webjars/**",
         "/swagger-ui/**",
         "/swagger-ui.html",
         "/v3/api-docs/**",
         "/api/v1/auth/**",
-        "/api/v1/webhooks/revenuecat"
+        "/api/v1/webhooks/revenuecat",
+        "/api/v1/ws-supporter/**",
     )
 
     @Bean
@@ -32,6 +32,11 @@ class SecurityConfig {
             .csrf { it.disable() }
             .sessionManagement {
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            }
+            .exceptionHandling {
+                it.authenticationEntryPoint { _, response, _ ->
+                    response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                }
             }
             .authorizeHttpRequests {
                 it.requestMatchers(*publicEndpoints).permitAll()

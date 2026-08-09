@@ -1,0 +1,9 @@
+ALTER TABLE user_tips
+ADD COLUMN IF NOT EXISTS price NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS price_in_purchased_currency NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS currency VARCHAR(10);
+
+ALTER TABLE user_subscriptions
+ADD COLUMN IF NOT EXISTS price NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS price_in_purchased_currency NUMERIC(10, 2),
+ADD COLUMN IF NOT EXISTS currency VARCHAR(10);

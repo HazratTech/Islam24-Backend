@@ -1,6 +1,7 @@
 package com.islam24.api.entity
 
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.*
 
@@ -33,6 +34,15 @@ class UserSubscription(
 
     @Column(nullable = false, length = 20)
     var environment: String,
+
+    @Column(precision = 10, scale = 2)
+    var price: BigDecimal? = null,
+
+    @Column(name = "price_in_purchased_currency", precision = 10, scale = 2)
+    var priceInPurchasedCurrency: BigDecimal? = null,
+
+    @Column(length = 10)
+    var currency: String? = null,
 
     @Column(nullable = false)
     var purchasedAt: Instant,

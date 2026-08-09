@@ -20,4 +20,7 @@ data class RevenueCatEvent(
     @JsonProperty("expiration_at_ms") val expirationAtMs: Long?,
     val store: String?,
     val environment: String?,
+    val price: Double?,
+    @JsonProperty("price_in_purchased_currency") val priceInPurchasedCurrency: Double?,
+    val currency: String?
 )

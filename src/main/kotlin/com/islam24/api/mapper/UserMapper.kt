@@ -1,6 +1,6 @@
 package com.islam24.api.mapper
 
-import com.islam24.api.dto.ProfileResponse
+import com.islam24.api.dto.profile.ProfileResponse
 import com.islam24.api.dto.auth.GoogleUser
 import com.islam24.api.entity.User
 import java.time.Instant

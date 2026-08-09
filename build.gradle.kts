@@ -22,6 +22,7 @@ repositories {
 
 dependencies {
     // Starter
+    implementation("org.springframework.boot:spring-boot-starter-websocket") // WebSocket
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -51,7 +52,6 @@ dependencies {
 
     // Swagger / OpenAPI
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
-
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")

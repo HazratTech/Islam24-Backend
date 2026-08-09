@@ -1,18 +1,22 @@
 package com.islam24.api.service
 
 import com.islam24.api.dto.RevenueCatEvent
+import com.islam24.api.dto.profile.LiveCommunityTickerPayload
 import com.islam24.api.entity.User
+import com.islam24.api.entity.UserPayment
 import com.islam24.api.entity.UserSubscription
 import com.islam24.api.entity.UserTip
 import com.islam24.api.entity.WebhookEventLog
 import com.islam24.api.repository.UserRepository
 import com.islam24.api.repository.UserSubscriptionRepository
 import com.islam24.api.repository.UserTipRepository
+import com.islam24.api.repository.UserPaymentRepository
 import com.islam24.api.repository.WebhookEventLogRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
+import org.springframework.messaging.simp.SimpMessagingTemplate
 
 @Service
 class SubscriptionService(
@@ -20,6 +24,8 @@ class SubscriptionService(
     private val webhookEventLogRepository: WebhookEventLogRepository,
     private val userSubscriptionRepository: UserSubscriptionRepository,
     private val userTipRepository: UserTipRepository,
+    private val userPaymentRepository: UserPaymentRepository,
+    private val messagingTemplate: SimpMessagingTemplate
 ) {
 
     @Transactional
@@ -38,12 +44,15 @@ class SubscriptionService(
             "INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "TEST" -> {
                 activeSubscription(user = user, event = event)
             }
+
             "NON_RENEWING_PURCHASE" -> {
                 recordOneTimeTip(user = user, event = event)
             }
+
             "EXPIRATION" -> {
                 expireSubscription(userId = user.id)
             }
+
             "CANCELLATION" -> {
                 markAutoRenewDisabled(userId = user.id)
             }
@@ -56,7 +65,8 @@ class SubscriptionService(
             val uuid = UUID.fromString(event.appUserId)
             val user = userRepository.findById(uuid).orElse(null)
             if (user != null) return user
-        } catch (_: IllegalArgumentException) {}
+        } catch (_: IllegalArgumentException) {
+        }
 
         // Try finding by email if appUserId contains @
         if (event.appUserId.contains("@")) {
@@ -104,11 +114,42 @@ class SubscriptionService(
         sub.entitlementId = entitlementId
         sub.store = store
         sub.environment = environment
+        sub.price = event.price?.toBigDecimal()
+        sub.priceInPurchasedCurrency = event.priceInPurchasedCurrency?.toBigDecimal()
+        sub.currency = event.currency
         sub.purchasedAt = purchasedAt
         sub.expiresAt = expiresAt
         sub.updatedAt = Instant.now()
 
         userSubscriptionRepository.save(sub)
+
+        // Record subscription payment history
+        val price = event.price?.toBigDecimal() ?: java.math.BigDecimal.ZERO
+        val priceLocal = event.priceInPurchasedCurrency?.toBigDecimal() ?: price
+        val currency = event.currency ?: "USD"
+        userPaymentRepository.save(
+            UserPayment(
+                id = UUID.randomUUID(),
+                user = user,
+                eventId = event.id,
+                type = "SUBSCRIPTION",
+                price = price,
+                priceInPurchasedCurrency = priceLocal,
+                currency = currency,
+                purchasedAt = purchasedAt
+            )
+        )
+
+        if (event.type == "INITIAL_PURCHASE") {
+            broadcastTicker(
+                user = user,
+                eventId = event.id,
+                type = "SUBSCRIPTION",
+                amount = event.priceInPurchasedCurrency ?: event.price ?: 0.0,
+                currency = event.currency ?: "USD",
+                productId = event.productId ?: "subscription",
+            )
+        }
     }
 
     private fun recordOneTimeTip(user: User, event: RevenueCatEvent) {
@@ -119,10 +160,39 @@ class SubscriptionService(
             eventId = event.id,
             productId = event.productId ?: "one_time_tip",
             store = event.store ?: "STORE",
+            price = event.price?.toBigDecimal(),
+            priceInPurchasedCurrency = event.priceInPurchasedCurrency?.toBigDecimal(),
+            currency = event.currency,
             purchasedAt = purchasedAt,
             createdAt = Instant.now()
         )
         userTipRepository.save(tip)
+
+        // Record tip payment history
+        val tipPrice = event.price?.toBigDecimal() ?: java.math.BigDecimal.ZERO
+        val tipPriceLocal = event.priceInPurchasedCurrency?.toBigDecimal() ?: tipPrice
+        val tipCurrency = event.currency ?: "USD"
+        userPaymentRepository.save(
+            UserPayment(
+                id = UUID.randomUUID(),
+                user = user,
+                eventId = event.id,
+                type = "TIP",
+                price = tipPrice,
+                priceInPurchasedCurrency = tipPriceLocal,
+                currency = tipCurrency,
+                purchasedAt = purchasedAt
+            )
+        )
+
+        broadcastTicker(
+            user = user,
+            eventId = event.id,
+            type = "TIP",
+            amount = event.priceInPurchasedCurrency ?: event.price ?: 0.0,
+            currency = event.currency ?: "USD",
+            productId = event.productId ?: "one_time_tip",
+        )
     }
 
     private fun expireSubscription(userId: UUID) {
@@ -139,4 +209,27 @@ class SubscriptionService(
             userSubscriptionRepository.save(sub)
         }
     }
+
+
+    private fun broadcastTicker(
+        eventId: String,
+        user: User,
+        type: String,
+        amount: Double,
+        currency: String,
+        productId: String,
+    ) {
+        val payload = LiveCommunityTickerPayload(
+            eventId = eventId,
+            donorName = user.displayName,
+            avatarUrl = user.avatarUrl.toString(),
+            type = type,
+            amount = amount,
+            currency = currency,
+            productId = productId,
+        )
+
+        messagingTemplate.convertAndSend("/topic/community-updates", payload)
+    }
+
 }

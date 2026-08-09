@@ -1,4 +1,4 @@
-package com.islam24.api.dto
+package com.islam24.api.dto.profile
 
 import java.time.Instant
 import java.util.UUID
