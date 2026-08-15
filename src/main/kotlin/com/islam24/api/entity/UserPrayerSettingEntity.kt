@@ -13,6 +13,9 @@ import java.time.Instant
 import java.util.UUID
 
 
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.fasterxml.jackson.annotation.JsonProperty
+
 @Entity
 @Table(name = "user_prayer_settings")
 class UserPrayerSettingEntity(
@@ -34,23 +37,22 @@ class UserPrayerSettingEntity(
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
-    var notificationSettings: NotificationSettings,
+    var notificationSettings: NotificationSettingsMapEntity = NotificationSettingsMapEntity(),
 
     @Column(nullable = false)
     var updatedAt : Instant = Instant.now()
 )
 
-
-data class NotificationSettings(
-    val fajr : PrayerNotification,
-    val dhuhr : PrayerNotification,
-    val asr : PrayerNotification,
-    val maghrib : PrayerNotification,
-    val isha: PrayerNotification,
+data class NotificationSettingsMapEntity(
+    @JsonProperty("fajr") val fajr: NotificationSettingEntity = NotificationSettingEntity(),
+    @JsonProperty("dhuhr") val dhuhr: NotificationSettingEntity = NotificationSettingEntity(),
+    @JsonProperty("asr") val asr: NotificationSettingEntity = NotificationSettingEntity(),
+    @JsonProperty("maghrib") val maghrib: NotificationSettingEntity = NotificationSettingEntity(),
+    @JsonProperty("isha") val isha: NotificationSettingEntity = NotificationSettingEntity()
 )
 
-data class PrayerNotification(
-    val enabled: Boolean = true,
-    val offsetMinutes: Int = 0,
-    val audio: String = "default",
+data class NotificationSettingEntity(
+    @JsonProperty("enabled") val enabled: Boolean = true,
+    @JsonProperty("offsetMinutes") @JsonAlias("offset_minutes", "offsetMinutes") val offsetMinutes: Int = 0,
+    @JsonProperty("audio") val audio: String = "default"
 )
