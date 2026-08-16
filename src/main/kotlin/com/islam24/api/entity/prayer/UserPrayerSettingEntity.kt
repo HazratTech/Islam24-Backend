@@ -1,4 +1,4 @@
-package com.islam24.api.entity
+package com.islam24.api.entity.prayer
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -15,6 +15,7 @@ import java.util.UUID
 
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.islam24.api.entity.User
 
 @Entity
 @Table(name = "user_prayer_settings")

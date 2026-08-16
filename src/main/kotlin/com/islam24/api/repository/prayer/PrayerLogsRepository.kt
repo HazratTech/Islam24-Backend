@@ -1,6 +1,6 @@
-package com.islam24.api.repository
+package com.islam24.api.repository.prayer
 
-import com.islam24.api.entity.PrayerLogsEntity
+import com.islam24.api.entity.prayer.PrayerLogsEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.time.Instant

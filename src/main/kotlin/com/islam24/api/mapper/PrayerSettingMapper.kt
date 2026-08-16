@@ -3,11 +3,10 @@ package com.islam24.api.mapper
 import com.islam24.api.dto.sync.NotificationSettingDto
 import com.islam24.api.dto.sync.NotificationSettingsMapDto
 import com.islam24.api.dto.sync.PrayerSettingSyncDto
-import com.islam24.api.entity.NotificationSettingEntity
-import com.islam24.api.entity.NotificationSettingsMapEntity
+import com.islam24.api.entity.prayer.NotificationSettingEntity
+import com.islam24.api.entity.prayer.NotificationSettingsMapEntity
 import com.islam24.api.entity.User
-import com.islam24.api.entity.UserPrayerSettingEntity
-import jdk.jfr.events.ActiveRecordingEvent.enabled
+import com.islam24.api.entity.prayer.UserPrayerSettingEntity
 import java.util.UUID
 
 

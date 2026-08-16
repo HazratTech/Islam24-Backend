@@ -1,10 +1,8 @@
 package com.islam24.api.mapper
 
 import com.islam24.api.dto.sync.PrayerLogSyncDto
-import com.islam24.api.dto.sync.PrayerSettingSyncDto
-import com.islam24.api.entity.PrayerLogsEntity
+import com.islam24.api.entity.prayer.PrayerLogsEntity
 import com.islam24.api.entity.User
-import com.islam24.api.entity.UserPrayerSettingEntity
 import java.util.UUID
 
 
